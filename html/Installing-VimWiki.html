@@ -122,10 +122,27 @@
     </head>
     <body>
         <p>Date: </p>
-<h1 id="fadedbee-blog">FadedBee Blog</h1>
-<h2 id="articles">Articles</h2>
-<p><a href="Postgres-CQRS">Postgres CQRS</a></p>
-<h2 id="topics">Topics</h2>
-<p><a href="VimWiki" class="uri">VimWiki</a> <a href="Consensus" class="uri">Consensus</a> <a href="WireGuard" class="uri">WireGuard</a></p>
+<h1 id="installing-vimwiki">Installing VimWiki</h1>
+<p>These instructions apply to Vim 7.4.1528 and later.</p>
+<p>First of all, clome the repo:</p>
+<pre><code>git clone https://github.com/vimwiki/vimwiki.git ~/.vim/pack/plugins/start/vimwiki
+
+# to generate documentation i.e. &#39;:h vimwiki&#39;
+vim -c &#39;helptags ~/.vim/pack/plugins/start/vimwiki/doc&#39; -c quit</code></pre>
+<p>Create (or append to) .vimrc:</p>
+<pre><code>set tabstop=8 softtabstop=0 expandtab shiftwidth=4 smarttab
+
+set nocompatible
+filetype plugin on
+syntax on
+
+let wiki_0 = {}
+let wiki_0.path = &#39;~/blog/&#39;
+let wiki_0.syntax = &#39;markdown&#39;
+let wiki_0.ext = &#39;.md&#39;
+
+let g:vimwiki_list = [wiki_0]
+let g:vimwiki_ext2syntax = {&#39;.md&#39;: &#39;markdown&#39;, &#39;.markdown&#39;: &#39;markdown&#39;, &#39;.mdown&#39;: &#39;markdown&#39;}
+let g:vimwiki_global_ext = 0</code></pre>
     </body>
 </html>

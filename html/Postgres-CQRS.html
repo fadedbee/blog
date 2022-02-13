@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="generator" content="pandoc">
+        <meta name="date" content=''>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title></title>
+        <style>
+            @media only screen and (min-width : 1000px) {
+                body { width: 70%; }
+            }
+
+            body {
+                margin: 1.5em auto;
+                width: 90%;
+                font-family: Helvetica Neue,Helvetica,Arial,sans-serif;
+                font-size: 1.3em;
+                background: #222;
+                color: #DDD;
+                padding-bottom: 2em;
+            }
+
+            div.sourceCode { overflow-x: auto; }
+            table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+                margin: 0;
+                padding: 0;
+                vertical-align: baseline;
+                border: none;
+            }
+            table.sourceCode {
+                width: 100%;
+                line-height: 100%;
+            }
+            td.lineNumbers {
+                text-align: right;
+                padding-right: 4px;
+                padding-left: 4px;
+                color: #aaaaaa;
+                border-right: 1px solid #aaaaaa;
+            }
+            td.sourceCode { padding-left: 5px; }
+            code > span.kw { color: #072; font-weight: bold; } /* Keyword */
+            code > span.dt { color: #920; } /* DataType */
+            code > span.dv { color: #4a7; } /* DecVal */
+            code > span.bn { color: #4a7; } /* BaseN */
+            code > span.fl { color: #4a7; } /* Float */
+            code > span.ch { color: #47a; } /* Char */
+            code > span.st { color: #47a; } /* String */
+            code > span.co { color: #6ab; font-style: italic; } /* Comment */
+            code > span.ot { color: #072; } /* Other */
+            code > span.al { color: #f00; font-weight: bold; } /* Alert */
+            code > span.fu { color: #027; } /* Function */
+            code > span.er { color: #f00; font-weight: bold; } /* Error */
+            code > span.wa { color: #6ab; font-weight: bold; font-style: italic; } /* Warning */
+            code > span.cn { color: #800; } /* Constant */
+            code > span.sc { color: #47a; } /* SpecialChar */
+            code > span.vs { color: #47a; } /* VerbatimString */
+            code > span.ss { color: #b68; } /* SpecialString */
+            code > span.im { } /* Import */
+            code > span.va { color: #117; } /* Variable */
+            code > span.cf { color: #072; font-weight: bold; } /* ControlFlow */
+            code > span.op { color: #666; } /* Operator */
+            code > span.bu { } /* BuiltIn */
+            code > span.ex { } /* Extension */
+            code > span.pp { color: #b70; } /* Preprocessor */
+            code > span.at { color: #792; } /* Attribute */
+            code > span.do { color: #b22; font-style: italic; } /* Documentation */
+            code > span.an { color: #6ab; font-weight: bold; font-style: italic; } /* Annotation */
+            code > span.cv { color: #6ab; font-weight: bold; font-style: italic; } /* CommentVar */
+            code > span.in { color: #6ab; font-weight: bold; font-style: italic; } /* Information */
+
+            h1, h2 {
+                color: #fff;
+                padding-bottom: 2px;
+            }
+            h1 {
+                font-size: 1.5em;
+                color: #DDA;
+            }
+            h2 {
+                font-size: 1.25em;
+                padding-top: 1em;
+                color: #8AD;
+                border-bottom: 1px dashed;
+            }
+
+            a { color: #DDA; }
+
+            p, li { line-height: 1.45em; }
+            p { line-height: 1.55em; }
+
+            img { max-width: 100%; }
+
+            li::marker { color:#C55; }
+            li { padding-bottom: 0.75em; padding-left: 0.25em; }
+            li:last-child { padding-bottom: 0; }
+            ol { margin-left: 1em; }
+            ol li { padding-left: 0; }
+
+            code, pre {
+                font-family: Consolas, monospace;
+                font-size: 1em;
+                background-color: #111;
+                color: #fff;
+            }
+
+            pre {
+                display: block;
+                padding: 1em;
+                white-space: pre-wrap;
+                word-break: keep-all;
+                border-left: 5px solid gray;
+            }
+
+            span.comment { color: darkgrey; }
+            span.out { color: lightgreen; }
+            span.cmd { color: #C55; }
+
+            code { white-space: pre; }
+        </style>
+    </head>
+    <body>
+        <p>Date: </p>
+<h1 id="cqrs-in-postgres">CQRS in Postgres</h1>
+<p>This is an educational example of how to to use CQRS in Postgres.</p>
+<h3 id="two-or-more-versions-of-code-can-run-concurrently-each-using-their-own-version-of-tables.">Two (or more) versions of code can run concurrently, each using their own version of tables.</h3>
+<p>This allows front end servers to upgraded one by one, as an upgrade is rolled out. Multiple versions of code can coexist peacefully. Usually you will only want two versions, at most. (Support for more versions results in space wasted on multiple read-model tables.)</p>
+<h3 id="the-contraints-of-the-read-model-are-always-enforced.">The contraints of the read-model are always enforced.</h3>
+<p>One issue with some implementations of CQRS is that the read-model's constraints aren't enforced on the write-model. This could lead to circumstances where the write-model contains data which would violate the read-model's constraints.</p>
+<p>In this example, we keep the read and write-models in one database. If the trigger on a write-model table fails to insert into the read-model table(s) because of constraint violations, the whole transaction will be rolled back.</p>
+<p>e.g. You can't update the password for a user who hasn't registered.</p>
+<p>(There may be some circumstances where this isn't the needed behaviour, but it fits most CRUD apps.)</p>
+<h2 id="a-minimal-schema">A Minimal Schema</h2>
+<p>We start with a minimal schema. Command Tables (the write-model) have names which are the past-tense of actions, whereas Query Tables have names which are nouns.</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">CREATE</span> <span class="kw">TABLE</span> user_registered_0 (
+    <span class="kw">id</span>
+    email
+    password_hash
+)
+
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> users_0 (
+    <span class="kw">id</span>
+    email
+    password_hash
+)
+
+<span class="kw">CREATE</span> <span class="kw">TRIGGER</span>
+
+<span class="kw">INSERT</span> <span class="kw">INTO</span> user_registered_0 <span class="kw">VALUES</span> (<span class="dv">0</span>, <span class="st">&#39;foo@example.com&#39;</span>, <span class="st">&#39;959c9f50aef1bc129a0e16564319a1b36515d570513079b6c73c72a5709abdce&#39;</span>);</code></pre></div>
+<p>At this early stage, there is no difference between the read and write-models.</p>
+<p>This database is used by code v0.</p>
+<p>Note: These examples use explicit <code>id</code> values, to allow</p>
+<h2 id="feature-request-usernames">Feature Request: Usernames</h2>
+<p>Next, we are told that we need to record a user's username at registration. To do this, we add a new version of the <code>user_registered</code> table, to which new code will write, and a new version of the <code>users</code> table.</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql">
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> user_registered_1 (
+    <span class="kw">id</span>
+    email
+    password_hash
+    username
+)
+
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> users_1 (
+    <span class="kw">id</span>
+    email
+    password_hash
+    username
+)
+
+<span class="kw">CREATE</span> <span class="kw">TRIGGER</span>
+<span class="kw">CREATE</span> <span class="kw">TRIGGER</span>
+
+<span class="kw">INSERT</span> <span class="kw">INTO</span> user_registered_1 <span class="kw">VALUES</span> (<span class="dv">1</span>, <span class="st">&#39;bar@example.com&#39;</span>, <span class="st">&#39;57846ba7f6f13c0454ebec6c9b31c7f52fe72afb606a8ba336170168ca0c408f&#39;</span>);</code></pre></div>
+<p>At this stage, it is fine for two versions of front end code to exist, one which <code>writes-to</code>/<code>reads-from</code> to <code>user_registered_0</code>/<code>users_0</code> and another which uses <code>user_registered_1</code>/<code>users_1</code>.</p>
+<p>There are still no differences between the write-models and the read-models.</p>
+<p>This database is used by code v0 (which only uses the <code>_0</code> tables), and the new code v1 (which uses the <code>_1</code> tables).</p>
+<h2 id="feature-request-changeable-passwords">Feature Request: Changeable Passwords</h2>
+<p>Now we have users, they are forgetting their passwords and requiring them to be changed.</p>
+<p>This is the stage at which the write-model and read-model first diverge.</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql">
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> password_changed_2 (
+    <span class="kw">id</span>
+    user_id
+    password_hash
+)
+
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> users_2 (
+    <span class="kw">id</span>
+    email
+    password_hash
+    username
+)
+
+<span class="kw">CREATE</span> <span class="kw">TRIGGER</span>
+<span class="kw">CREATE</span> <span class="kw">TRIGGER</span>
+
+<span class="kw">INSERT</span> <span class="kw">INTO</span> password_changes_2 <span class="kw">VALUES</span> (<span class="dv">0</span>, <span class="dv">1</span>, <span class="st">&#39;8aa64c9ca202961c0f6bcd34c45f95c9e0cf5555cbcacfd7f87163dad7b60d2f&#39;</span>);</code></pre></div>
+<p>While <code>users_2</code> has the same shape as <code>users_1</code>, only <code>users_2</code> takes account of password changes.</p>
+<h2 id="tidying-up">Tidying Up</h2>
+<p>We now have three versions of code running across our cluster of front end servers. Once we are happy with our v2 code, we can shutdown the v0 and v1 front end servers and tidy the database.</p>
+<p>We don't want to keep the v0 and v1 code alive any longer than we have to, as they do not know about password changes.</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">DROP</span> <span class="kw">TRIGGER</span>
+<span class="kw">DROP</span> <span class="kw">TABLE</span> users_0;
+<span class="kw">DROP</span> <span class="kw">TRIGGER</span>
+<span class="kw">DROP</span> <span class="kw">TABLE</span> users_1;</code></pre></div>
+<p>Notice that the write-model tables are never destroyed. All version of the read-model aggregates rows from all equal-and-earlier versioned tables of the write-model. There are W*R triggers, which is another reason to keep R (the number of extant read-model versions) small.</p>
+<h2 id="feature-request-messages">Feature Request: Messages</h2>
+<p>Users now want to send each other messages. We enable this with a new table.</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql">
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> message_sent_3 (
+    <span class="kw">id</span>
+    src_id
+    dst_id
+    content
+)
+
+<span class="kw">CREATE</span> <span class="kw">TABLE</span> messages_3 (
+    <span class="kw">id</span>
+    src_id
+    dst_id
+    content
+)
+
+<span class="kw">TRIGGER</span>
+
+<span class="kw">INSERT</span></code></pre></div>
+<h2 id="rules">Rules</h2>
+<p>These are the rules I have used in these examples.</p>
+<ul>
+<li>All</li>
+</ul>
+    </body>
+</html>

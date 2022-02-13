@@ -122,10 +122,18 @@
     </head>
     <body>
         <p>Date: </p>
-<h1 id="fadedbee-blog">FadedBee Blog</h1>
-<h2 id="articles">Articles</h2>
-<p><a href="Postgres-CQRS">Postgres CQRS</a></p>
-<h2 id="topics">Topics</h2>
-<p><a href="VimWiki" class="uri">VimWiki</a> <a href="Consensus" class="uri">Consensus</a> <a href="WireGuard" class="uri">WireGuard</a></p>
+<h1 id="time-slice-consensus">Time Slice Consensus</h1>
+<p>TSC has a leader for every second.</p>
+<p>Applicants and Peers are identified by tuples of <code>(IPv4, PublicKey)</code>.</p>
+<p>All peers know the approximate set of current peers.</p>
+<p>The leader for a particular second is deterministically calculated from the set of peers and the epoch time (of the second).</p>
+<h1 id="availability">Availability</h1>
+<p>Availability is provided by each second having a different leader.</p>
+<p>If a leader does not perform, it is eventually removed from the set of peers.</p>
+<h1 id="leadership">Leadership</h1>
+<p>The leader (for any particular second) is calculated using Consistent Hashing.</p>
+<p>Peers form a circle of circumference 2^32. A peers position is just its IPv4 address.</p>
+<p>The leader is the peer clockwise from position <code>hash(epoch_time)</code>.</p>
+<p>Applicants will not be promoted to peers if their IPv4 address would make them a leader in the next N seconds. This creates stability.</p>
     </body>
 </html>

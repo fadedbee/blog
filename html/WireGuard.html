@@ -122,10 +122,45 @@
     </head>
     <body>
         <p>Date: </p>
-<h1 id="fadedbee-blog">FadedBee Blog</h1>
-<h2 id="articles">Articles</h2>
-<p><a href="Postgres-CQRS">Postgres CQRS</a></p>
-<h2 id="topics">Topics</h2>
-<p><a href="VimWiki" class="uri">VimWiki</a> <a href="Consensus" class="uri">Consensus</a> <a href="WireGuard" class="uri">WireGuard</a></p>
+<p>Okay, install wireguard and wireguard-tools on your laptop.</p>
+<p>Create a key pair:</p>
+<pre><code>cd /etc
+mkdir wireguard
+cd wireguard
+wg genkey | tee privatekey | wg pubkey &gt; publickey</code></pre>
+<p>On Gate see the README file and configure interface wg1.conf with something like:</p>
+<pre><code>#
+# Wireguard wg1: Chris Dew laptop
+#
+
+[Interface]
+Address = 172.16.0.6/30
+ListenPort = 2269
+PrivateKey = &lt;hidden for security&gt;
+
+[Peer]
+#No fixed end-point (road warrior)
+#Endpoint = gate.tubby.org:2269
+PublicKey = &lt;Public key from Ubuntu&gt;
+AllowedIPs = 172.16.0.4/30</code></pre>
+<p>On your client configure wg0.conf with something like:</p>
+<pre><code>#
+# Wireguard wg0: Link to Thorcom
+#
+
+[Interface]
+Address = 172.16.0.5/30
+ListenPort = 2269
+PrivateKey = &lt;Ubuntu private key&gt;
+
+[Peer]
+Endpoint = gate.thorcom.com:2269
+PublicKey = &lt;Gate public key&gt;
+AllowedIPs = 192.168.0.0/24, 192.168.1.0/24, 172.27.0.0/16</code></pre>
+<p>Start Wireguard interface on gate:</p>
+<pre><code>wg-quick up wg1</code></pre>
+<p>on Ubuntu:</p>
+<pre><code>wg-quick up wg0</code></pre>
+<p>Test</p>
     </body>
 </html>

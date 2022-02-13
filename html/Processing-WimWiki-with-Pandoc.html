@@ -122,10 +122,9 @@
     </head>
     <body>
         <p>Date: </p>
-<h1 id="fadedbee-blog">FadedBee Blog</h1>
-<h2 id="articles">Articles</h2>
-<p><a href="Postgres-CQRS">Postgres CQRS</a></p>
-<h2 id="topics">Topics</h2>
-<p><a href="VimWiki" class="uri">VimWiki</a> <a href="Consensus" class="uri">Consensus</a> <a href="WireGuard" class="uri">WireGuard</a></p>
+<h1 id="processing-vimwiki-with-pandoc">Processing VimWiki with Pandoc</h1>
+<p>Pandoc can turn a VimWiki into HTML. These instructions expect the VimWiki path to be ~/blog, with generated HTML in ~/html.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="bu">cd</span> ~/blog
+<span class="fu">find</span> wiki -iname <span class="st">&quot;*.md&quot;</span> -type f -exec sh -c <span class="st">&#39;pandoc -s &quot;${0}&quot; --template &quot;${1}/blog/template.html&quot; -f markdown -t html5 -o &quot;${1}html/$(basename ${0%.md}.html)&quot;&#39;</span> <span class="dt">{}</span> ~ <span class="dt">\;</span></code></pre></div>
     </body>
 </html>
